@@ -52,7 +52,11 @@ public class SkuController {
     public ApiResult<Void> adjustStock(@PathVariable Long spuId, @PathVariable Long skuId,
             @RequestBody Map<String, Object> body) {
         try {
-            Integer qty = (Integer) body.get("qty");
+            Object qtyObj = body.get("qty");
+            if (qtyObj == null) {
+                return ApiResult.error(400, "调整数量不能为空");
+            }
+            int qty = ((Number) qtyObj).intValue();
             String remark = (String) body.get("remark");
             skuService.adjustStock(spuId, skuId, qty, remark);
             return ApiResult.success(null);

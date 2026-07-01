@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
@@ -35,7 +36,7 @@ request.interceptors.response.use(
         case 401:
           // token 过期，跳转登录页
           localStorage.removeItem('token')
-          window.location.href = '/login'
+          router.push('/login')
           break
         case 500:
           console.error('服务器错误')
@@ -44,7 +45,11 @@ request.interceptors.response.use(
           console.error(error.response.data?.message || '请求失败')
       }
     } else {
-      console.error('网络错误')
+      if (error.code === 'ECONNABORTED') {
+        console.error('请求超时')
+      } else {
+        console.error('网络错误')
+      }
     }
     return Promise.reject(error)
   },

@@ -135,18 +135,21 @@ public class SpuService {
         }
     }
 
+    @Transactional
     public void batchOnShelf(List<Long> ids) {
         for (Long id : ids) {
             onShelf(id);
         }
     }
 
+    @Transactional
     public void batchOffShelf(List<Long> ids) {
         for (Long id : ids) {
             offShelf(id);
         }
     }
 
+    @Transactional
     public void batchDelete(List<Long> ids) {
         for (Long id : ids) {
             spuMapper.deleteById(id);

@@ -26,7 +26,7 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ApiResult<List<Category>> list(@RequestParam(required = false) Integer level) {
+    public ApiResult<List<Category>> list() {
         try {
             List<Category> list = categoryService.getAll();
             return ApiResult.success(list);

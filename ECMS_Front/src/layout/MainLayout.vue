@@ -159,9 +159,23 @@ function handleMenuSelect(index: string) {
   background-color: #304156 !important;
 }
 
+.main-menu .el-sub-menu__title {
+  color: #ffffff !important;
+}
+
+.main-menu .el-sub-menu__title span,
+.main-menu .el-sub-menu__title .el-icon {
+  color: #ffffff !important;
+}
+
+.main-menu .el-menu-item span,
+.main-menu .el-menu-item .el-icon {
+  color: #ffffff !important;
+}
+
 .main-menu .el-menu-item:hover,
 .main-menu .el-sub-menu__title:hover {
-  background-color: #263445 !important;
+  background-color: #409EFF !important;
 }
 
 .main-menu .el-menu-item.is-active {

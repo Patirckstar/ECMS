@@ -27,6 +27,8 @@ const queryParams = reactive<ProductQueryParams>({
   createTimeEnd: undefined,
 })
 
+const dateRange = ref<[string, string] | null>(null)
+
 // ========== 数据 ==========
 const tableData = ref<SpuItem[]>([])
 const total = ref(0)
@@ -71,8 +73,10 @@ async function fetchData() {
     if (queryParams.priceMax) params.priceMax = queryParams.priceMax
     if (queryParams.stockMin) params.stockMin = queryParams.stockMin
     if (queryParams.stockMax) params.stockMax = queryParams.stockMax
-    if (queryParams.createTimeStart) params.createTimeStart = queryParams.createTimeStart
-    if (queryParams.createTimeEnd) params.createTimeEnd = queryParams.createTimeEnd
+    if (dateRange.value) {
+      params.createTimeStart = dateRange.value[0]
+      params.createTimeEnd = dateRange.value[1]
+    }
 
     const res = await getProductList(params)
     tableData.value = res.data.records || []
@@ -101,6 +105,7 @@ function handleReset() {
   queryParams.stockMax = undefined
   queryParams.createTimeStart = undefined
   queryParams.createTimeEnd = undefined
+  dateRange.value = null
   queryParams.page = 1
   fetchData()
 }
@@ -293,7 +298,7 @@ function canShowAction(row: SpuItem, action: string): boolean {
           </el-col>
           <el-col :span="4">
             <el-date-picker
-              v-model="queryParams.createTimeStart"
+              v-model="dateRange"
               type="daterange"
               range-separator="至"
               start-placeholder="开始时间"
@@ -331,7 +336,16 @@ function canShowAction(row: SpuItem, action: string): boolean {
       stripe
       style="width: 100%"
       @selection-change="handleSelectionChange"
-      @sort-change="(sort: any) => { handleQuery() }"
+      @sort-change="(sort: any) => {
+        if (sort.prop && sort.order) {
+          queryParams.sortField = sort.prop
+          queryParams.sortOrder = sort.order === 'ascending' ? 'asc' : 'desc'
+        } else {
+          queryParams.sortField = undefined
+          queryParams.sortOrder = undefined
+        }
+        handleQuery()
+      }"
     >
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="商品缩略图" width="80" align="center">

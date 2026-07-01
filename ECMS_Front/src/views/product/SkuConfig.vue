@@ -2,8 +2,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSkuList, updateSku, batchUpdateSkus, generateSkuCombinations, getProductDetail } from '@/api/product'
-import type { SkuItem, SpuItem, SpecTemplate, SpecValue } from '@/types/product'
+import { getSkuList, updateSku, batchUpdateSkus, getProductDetail } from '@/api/product'
+import type { SkuItem, SpuItem } from '@/types/product'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,9 +11,6 @@ const spuId = computed(() => Number(route.params.id))
 const loading = ref(false)
 const skuList = ref<SkuItem[]>([])
 const productInfo = ref<SpuItem | null>(null)
-
-// 规格定义（模拟数据，实际应由后端提供）
-const specTemplates = ref<SpecTemplate[]>([])
 
 // 编辑中的SKU
 const editingSku = ref<SkuItem | null>(null)

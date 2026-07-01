@@ -72,9 +72,11 @@ public interface SpuMapper {
                         "AND EXISTS (SELECT 1 FROM spu_tag WHERE spu_tag.spu_id = spu.id AND spu_tag.tag_id = #{params.tagId}) "
                         +
                         "</if>" +
-                        "<if test='params.priceMin != null and params.priceMax != null'>" +
-                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id HAVING MIN(sku.sale_price) BETWEEN #{params.priceMin} AND #{params.priceMax}) "
-                        +
+                        "<if test='params.priceMin != null'>" +
+                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id GROUP BY sku.spu_id HAVING MIN(sku.sale_price) &gt;= #{params.priceMin}) " +
+                        "</if>" +
+                        "<if test='params.priceMax != null'>" +
+                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id GROUP BY sku.spu_id HAVING MIN(sku.sale_price) &lt;= #{params.priceMax}) " +
                         "</if>" +
                         "ORDER BY spu.updated_at DESC " +
                         "LIMIT #{params.offset}, #{params.limit}" +
@@ -98,9 +100,11 @@ public interface SpuMapper {
                         "AND EXISTS (SELECT 1 FROM spu_tag WHERE spu_tag.spu_id = spu.id AND spu_tag.tag_id = #{params.tagId}) "
                         +
                         "</if>" +
-                        "<if test='params.priceMin != null and params.priceMax != null'>" +
-                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id HAVING MIN(sku.sale_price) BETWEEN #{params.priceMin} AND #{params.priceMax}) "
-                        +
+                        "<if test='params.priceMin != null'>" +
+                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id GROUP BY sku.spu_id HAVING MIN(sku.sale_price) &gt;= #{params.priceMin}) " +
+                        "</if>" +
+                        "<if test='params.priceMax != null'>" +
+                        "AND EXISTS (SELECT 1 FROM sku WHERE sku.spu_id = spu.id GROUP BY sku.spu_id HAVING MIN(sku.sale_price) &lt;= #{params.priceMax}) " +
                         "</if>" +
                         "</script>")
         long countList(@Param("params") Map<String, Object> params);

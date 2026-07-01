@@ -33,11 +33,6 @@ export enum ProductType {
     VIRTUAL = 2,   // 虚拟商品
 }
 
-export const ProductTypeLabel: Record<number, string> = {
-    [ProductType.PHYSICAL]: '实物商品',
-    [ProductType.VIRTUAL]: '虚拟商品',
-}
-
 // 标签类型
 export interface Tag {
     id: number
@@ -68,22 +63,6 @@ export interface Category {
     sortOrder: number
     status: 0 | 1
     children?: Category[]
-}
-
-// 规格模板
-export interface SpecTemplate {
-    id: number
-    specName: string
-    sortOrder: number
-    values: SpecValue[]
-}
-
-export interface SpecValue {
-    id: number
-    specId: number
-    valueName: string
-    sortOrder: number
-    selected?: boolean  // 前端临时标记是否选中
 }
 
 // SPU 商品
@@ -208,18 +187,6 @@ export interface AuditLog {
     auditorName?: string
     rejectReason?: string
     auditTime: string
-}
-
-// 价格变动记录
-export interface PriceLog {
-    id: number
-    skuId: number
-    priceType: string
-    beforePrice: number
-    afterPrice: number
-    operatorId: number
-    operatorName?: string
-    createdAt: string
 }
 
 // 分页结果

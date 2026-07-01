@@ -9,6 +9,12 @@ const router = createRouter({
       redirect: '/product',
     },
     {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/Login.vue'),
+      meta: { title: '登录' },
+    },
+    {
       path: '/product',
       component: MainLayout,
       children: [
@@ -44,7 +50,23 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/NotFound.vue'),
+      meta: { title: '页面不存在' },
+    },
   ],
+})
+
+// 导航守卫 - 检查登录状态
+router.beforeEach((to, _from, next) => {
+  const token = localStorage.getItem('token')
+  if (to.path !== '/login' && !token) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router
