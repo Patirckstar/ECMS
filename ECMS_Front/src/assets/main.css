@@ -1,0 +1,38 @@
+/* 全局样式覆盖 */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c0c4cc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Element Plus 全局覆盖 */
+.el-table .cell {
+  white-space: nowrap;
+}
+
+/* 页面通用卡片样式 */
+.page-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 筛选栏底部间距 */
+.filter-bar {
+  margin-bottom: 20px;
+}
