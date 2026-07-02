@@ -18,4 +18,9 @@ public interface SpuImageMapper {
 
     @Select("SELECT * FROM spu_images WHERE spu_id = #{spuId} ORDER BY image_type ASC, sort_order ASC")
     List<SpuImage> selectBySpuId(@Param("spuId") Long spuId);
+
+    @Select("<script>SELECT * FROM spu_images WHERE spu_id IN " +
+            "<foreach collection='spuIds' item='spuId' open='(' separator=',' close=')'>#{spuId}</foreach> " +
+            "ORDER BY image_type ASC, sort_order ASC</script>")
+    List<SpuImage> selectBySpuIds(@Param("spuIds") List<Long> spuIds);
 }

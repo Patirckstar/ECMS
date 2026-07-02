@@ -64,6 +64,17 @@ public class SpuService {
 		List<Spu> list = spuMapper.selectList(params);
 		long total = spuMapper.countList(params);
 
+		if (!list.isEmpty()) {
+			List<Long> spuIds = list.stream().map(Spu::getId).collect(Collectors.toList());
+			List<SpuImage> allImages = spuImageMapper.selectBySpuIds(spuIds);
+			for (Spu spu : list) {
+				List<SpuImage> images = allImages.stream()
+						.filter(img -> spu.getId().equals(img.getSpuId()))
+						.collect(Collectors.toList());
+				spu.setImages(images);
+			}
+		}
+
 		return PageResult.of(list, total, page, pageSize);
 	}
 

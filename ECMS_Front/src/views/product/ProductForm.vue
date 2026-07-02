@@ -8,6 +8,7 @@ import { getBrandList } from '@/api/brand'
 import { getTagList } from '@/api/tag'
 import type { Category, Brand, Tag, SpuItem } from '@/types/product'
 import { ProductType } from '@/types/product'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +18,7 @@ const productId = computed(() => Number(route.params.id))
 const activeStep = ref(0)
 const formRef = ref()
 const loading = ref(false)
+const uploading = ref(false)
 
 const formData = reactive({
   spuName: '',
@@ -41,11 +43,36 @@ const formData = reactive({
 const uploadImages = ref<{ name: string; url: string }[]>([])
 const uploadAction = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/upload/image`
 
-function handleUploadSuccess(response: any, file: any) {
-  uploadImages.value.push({
-    name: file.name,
-    url: response.data || response.url,
-  })
+async function handleFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+
+  uploading.value = true
+  try {
+    for (let i = 0; i < input.files.length; i++) {
+      const file = input.files[i]
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await axios.post(uploadAction, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      const respData = res.data
+      const url = respData?.data?.url || respData?.url
+      if (url) {
+        uploadImages.value.push({ name: file.name, url })
+      } else {
+        ElMessage.error(`上传 ${file.name} 失败：返回数据异常`)
+      }
+    }
+    ElMessage.success(`成功上传 ${input.files.length} 张图片`)
+  } catch (e: any) {
+    ElMessage.error('图片上传失败：' + (e.message || '未知错误'))
+  } finally {
+    uploading.value = false
+    input.value = '' // 重置 input，允许重复选择相同文件
+  }
 }
 
 function handleRemoveImage(index: number) {
@@ -92,7 +119,7 @@ async function loadProductDetail() {
       productType: data.productType,
       brandId: data.brandId,
       categoryId: data.categoryId,
-      tagIds: data.tagsIds || [],
+      tagIds: data.tags?.map((t: any) => t.id) || data.tagIds || [],
       isFreeShipping: data.isFreeShipping,
       shipFrom: data.shipFrom || '',
       shipHours: data.shipHours,
@@ -101,6 +128,13 @@ async function loadProductDetail() {
       returnPolicy: data.returnPolicy || '',
       autoOffline: data.autoOffline,
     })
+
+    if (data.images && data.images.length > 0) {
+      uploadImages.value = data.images.map((img: any) => ({
+        name: img.imageUrl?.split('/').pop() || img.imageUrl,
+        url: img.imageUrl,
+      }))
+    }
 
     const skuRes = await getSkuList(productId.value)
     const skus = skuRes.data || []
@@ -145,11 +179,21 @@ async function handleSubmit() {
 
   loading.value = true
   try {
+    const submitData: any = {
+      ...formData,
+      images: uploadImages.value.map((img, index) => ({
+        imageUrl: img.url,
+        imageType: 1,
+        isCover: index === 0 ? 1 : 0,
+        sortOrder: index,
+      })),
+    }
+
     if (isEdit.value) {
-      await updateProduct(productId.value, { ...formData } as any)
+      await updateProduct(productId.value, submitData)
       ElMessage.success('保存成功')
     } else {
-      const res = await createProduct({ ...formData } as any)
+      const res = await createProduct(submitData)
       if (res.code !== 200) {
         ElMessage.error(res.message || '创建失败')
         return
@@ -229,16 +273,23 @@ function goToSkuConfig() {
 
       <div v-show="activeStep === 1" class="step-content">
         <h4 class="section-title">商品主图</h4>
-        <el-upload
-          :action="uploadAction"
-          list-type="picture-card"
-          :auto-upload="false"
-          :limit="5"
-          :on-success="handleUploadSuccess"
-          accept="image/png,image/jpeg,image/gif,image/webp"
-        >
-          <el-icon><Plus /></el-icon>
-        </el-upload>
+
+        <div class="upload-area">
+          <label class="upload-label" :class="{ 'is-uploading': uploading }">
+            <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple @change="handleFileChange" />
+            <div class="upload-placeholder">
+              <el-icon :size="28"><Plus /></el-icon>
+              <span>{{ uploading ? '上传中...' : '点击上传图片' }}</span>
+            </div>
+          </label>
+
+          <div v-for="(img, idx) in uploadImages" :key="idx" class="upload-preview">
+            <img :src="getImageUrl(img.url)" :alt="img.name" />
+            <div class="upload-preview-actions">
+              <el-icon @click="handleRemoveImage(idx)"><Delete /></el-icon>
+            </div>
+          </div>
+        </div>
         <p class="upload-tip">支持 PNG、JPG、GIF、WebP 格式，最多 5 张，建议尺寸 800×800</p>
       </div>
 
@@ -337,5 +388,78 @@ function goToSkuConfig() {
   font-size: 12px;
   color: #909399;
   margin-top: 8px;
+}
+
+.upload-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upload-label {
+  width: 148px;
+  height: 148px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+  background: #fafafa;
+}
+
+.upload-label:hover {
+  border-color: #409eff;
+}
+
+.upload-label.is-uploading {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.upload-label input {
+  display: none;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.upload-preview {
+  width: 148px;
+  height: 148px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #e4e7ed;
+}
+
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-preview-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 4px;
+  border-radius: 0 6px 0 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.upload-preview:hover .upload-preview-actions {
+  opacity: 1;
 }
 </style>
