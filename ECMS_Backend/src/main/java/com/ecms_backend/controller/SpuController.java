@@ -9,6 +9,8 @@ import com.ecms_backend.mapper.SkuMapper;
 import com.ecms_backend.service.SpuService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/products")
 public class SpuController {
+
+    private static final Logger log = LoggerFactory.getLogger(SpuController.class);
 
     @Autowired
     private SpuService spuService;
@@ -89,9 +93,17 @@ public class SpuController {
     @PostMapping
     public ApiResult<Spu> create(@RequestBody Spu spu) {
         try {
+            log.info("=== 创建商品 ===");
+            log.info("spuName={}, subTitle={}, brandId={}, categoryId={}, productType={}",
+                    spu.getSpuName(), spu.getSubTitle(), spu.getBrandId(), spu.getCategoryId(), spu.getProductType());
+            log.info("isFreeShipping={}, shipFrom={}, shipHours={}, sevenDayReturn={}, autoOffline={}",
+                    spu.getIsFreeShipping(), spu.getShipFrom(), spu.getShipHours(), spu.getSevenDayReturn(), spu.getAutoOffline());
+
             Spu created = spuService.create(spu);
+            log.info("创建成功 ID={}, spuName={}", created.getId(), created.getSpuName());
             return ApiResult.success(created);
         } catch (Exception e) {
+            log.error("创建商品失败", e);
             return ApiResult.error(500, e.getMessage());
         }
     }
@@ -99,9 +111,17 @@ public class SpuController {
     @PutMapping("/{id}")
     public ApiResult<Spu> update(@PathVariable Long id, @RequestBody Spu spu) {
         try {
+            log.info("=== 更新商品 {} ===", id);
+            log.info("spuName={}, subTitle={}, brandId={}, categoryId={}, productType={}",
+                    spu.getSpuName(), spu.getSubTitle(), spu.getBrandId(), spu.getCategoryId(), spu.getProductType());
+            log.info("isFreeShipping={}, shipFrom={}, shipHours={}, autoOffline={}",
+                    spu.getIsFreeShipping(), spu.getShipFrom(), spu.getShipHours(), spu.getAutoOffline());
+
             Spu updated = spuService.update(id, spu);
+            log.info("更新成功 ID={}", id);
             return ApiResult.success(updated);
         } catch (Exception e) {
+            log.error("更新商品失败", e);
             return ApiResult.error(500, e.getMessage());
         }
     }

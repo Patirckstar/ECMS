@@ -130,7 +130,15 @@ public class SpuService {
 			}
 		}
 
-		if (spu.getTags() != null && !spu.getTags().isEmpty()) {
+		if (spu.getTagIds() != null && !spu.getTagIds().isEmpty()) {
+			for (Long tagId : spu.getTagIds()) {
+				SpuTag spuTag = new SpuTag();
+				spuTag.setSpuId(spu.getId());
+				spuTag.setTagId(tagId);
+				spuTag.setCreatedAt(LocalDateTime.now());
+				spuTagMapper.insert(spuTag);
+			}
+		} else if (spu.getTags() != null && !spu.getTags().isEmpty()) {
 			for (Tag tag : spu.getTags()) {
 				SpuTag spuTag = new SpuTag();
 				spuTag.setSpuId(spu.getId());
@@ -158,7 +166,16 @@ public class SpuService {
 			}
 		}
 
-		if (spu.getTags() != null) {
+		if (spu.getTagIds() != null) {
+			spuTagMapper.deleteBySpuId(id);
+			for (Long tagId : spu.getTagIds()) {
+				SpuTag spuTag = new SpuTag();
+				spuTag.setSpuId(id);
+				spuTag.setTagId(tagId);
+				spuTag.setCreatedAt(LocalDateTime.now());
+				spuTagMapper.insert(spuTag);
+			}
+		} else if (spu.getTags() != null) {
 			spuTagMapper.deleteBySpuId(id);
 			for (Tag tag : spu.getTags()) {
 				SpuTag spuTag = new SpuTag();

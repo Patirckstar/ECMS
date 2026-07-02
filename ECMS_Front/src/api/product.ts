@@ -88,6 +88,13 @@ export function updateSku(spuId: number, skuId: number, data: Partial<SkuItem>) 
 }
 
 /**
+ * 新增SKU
+ */
+export function createSku(spuId: number, data: Partial<SkuItem>) {
+  return request.post<ApiResult<SkuItem>>(`${BASE_URL}/${spuId}/skus`, data)
+}
+
+/**
  * 批量更新SKU
  */
 export function batchUpdateSkus(spuId: number, skus: Partial<SkuItem>[]) {

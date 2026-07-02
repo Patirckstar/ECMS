@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSkuList, updateSku, batchUpdateSkus, getProductDetail } from '@/api/product'
+import { getSkuList, updateSku, batchUpdateSkus, getProductDetail, createSku } from '@/api/product'
 import type { SkuItem, SpuItem } from '@/types/product'
 
 const route = useRoute()
@@ -15,6 +15,17 @@ const productInfo = ref<SpuItem | null>(null)
 // 编辑中的SKU
 const editingSku = ref<SkuItem | null>(null)
 const editDialogVisible = ref(false)
+
+// 新增SKU
+const addDialogVisible = ref(false)
+const addSkuForm = reactive({
+  specName: '',
+  marketPrice: 0,
+  salePrice: 0,
+  memberPrice: 0,
+  stock: 0,
+  warnThreshold: 0,
+})
 
 // 批量操作
 const selectedSkus = ref<number[]>([])
@@ -51,10 +62,45 @@ function handleEditSku(sku: SkuItem) {
   editDialogVisible.value = true
 }
 
+// 新增SKU
+function handleAddSku() {
+  addSkuForm.specName = ''
+  addSkuForm.marketPrice = 0
+  addSkuForm.salePrice = 0
+  addSkuForm.memberPrice = 0
+  addSkuForm.stock = 0
+  addSkuForm.warnThreshold = 0
+  addDialogVisible.value = true
+}
+
+async function handleCreateSku() {
+  if (!addSkuForm.specName.trim()) {
+    ElMessage.warning('请输入规格名称')
+    return
+  }
+  try {
+    await createSku(spuId.value, {
+      specInfo: JSON.stringify({ 规格: addSkuForm.specName }),
+      marketPrice: addSkuForm.marketPrice,
+      salePrice: addSkuForm.salePrice,
+      memberPrice: addSkuForm.memberPrice,
+      stock: addSkuForm.stock,
+      warnThreshold: addSkuForm.warnThreshold,
+    })
+    ElMessage.success('SKU新增成功')
+    addDialogVisible.value = false
+    const res = await getSkuList(spuId.value)
+    skuList.value = res.data || []
+  } catch {
+    ElMessage.error('新增失败')
+  }
+}
+
 async function handleSaveSku() {
   if (!editingSku.value) return
   try {
     await updateSku(spuId.value, editingSku.value.id!, {
+      specInfo: editingSku.value.specInfo,
       marketPrice: editingSku.value.marketPrice,
       salePrice: editingSku.value.salePrice,
       memberPrice: editingSku.value.memberPrice,
@@ -132,6 +178,11 @@ async function handleBatchStatus(status: 0 | 1) {
   }
 }
 
+function getSkuRowClass({ row }: { row: any }) {
+  if (row.status === 0) return 'disabled-row'
+  return ''
+}
+
 function goBack() {
   router.push('/product')
 }
@@ -153,6 +204,7 @@ function goBack() {
 
     <!-- 批量操作栏 -->
     <div class="batch-bar">
+      <el-button type="primary" @click="handleAddSku">新增SKU</el-button>
       <el-button @click="handleBatchSetPrice">批量设置价格</el-button>
       <el-button @click="handleBatchSetStock">批量设置库存</el-button>
       <el-button @click="handleBatchStatus(1)">批量启用</el-button>
@@ -166,6 +218,7 @@ function goBack() {
       stripe
       border
       style="width: 100%"
+      :row-class-name="getSkuRowClass"
       @selection-change="(val: any) => selectedSkus = val.map((v: any) => v.id)"
     >
       <el-table-column type="selection" width="45" align="center" />
@@ -223,7 +276,7 @@ function goBack() {
           <el-input v-model="editingSku.skuCode" disabled />
         </el-form-item>
         <el-form-item label="规格">
-          <el-input :model-value="parseSkuName(editingSku.specInfo)" disabled />
+          <el-input v-model="editingSku.specInfo" />
         </el-form-item>
         <el-form-item label="市场价">
           <el-input-number v-model="editingSku.marketPrice" :min="0" :precision="2" style="width: 100%" />
@@ -247,6 +300,34 @@ function goBack() {
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSaveSku">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新增SKU弹窗 -->
+    <el-dialog v-model="addDialogVisible" title="新增SKU" width="500px">
+      <el-form :model="addSkuForm" label-width="100px">
+        <el-form-item label="规格名称" required>
+          <el-input v-model="addSkuForm.specName" placeholder="如：白色 / M" />
+        </el-form-item>
+        <el-form-item label="市场价">
+          <el-input-number v-model="addSkuForm.marketPrice" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="销售价">
+          <el-input-number v-model="addSkuForm.salePrice" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="会员价">
+          <el-input-number v-model="addSkuForm.memberPrice" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="库存">
+          <el-input-number v-model="addSkuForm.stock" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="预警阈值">
+          <el-input-number v-model="addSkuForm.warnThreshold" :min="0" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleCreateSku">确认新增</el-button>
       </template>
     </el-dialog>
   </div>
@@ -283,5 +364,14 @@ function goBack() {
 .stock-warning {
   color: #f56c6c;
   font-weight: 600;
+}
+
+:deep(.disabled-row) {
+  opacity: 0.5;
+  background-color: #fafafa;
+}
+
+:deep(.disabled-row:hover) {
+  cursor: not-allowed;
 }
 </style>

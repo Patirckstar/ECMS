@@ -30,6 +30,33 @@ public class SkuService {
     }
 
     @Transactional
+    public Sku create(Long spuId, Sku sku) {
+        Spu spu = spuMapper.selectById(spuId);
+        if (spu == null) {
+            throw new RuntimeException("商品不存在");
+        }
+        int skuCount = skuMapper.selectBySpuId(spuId).size();
+        sku.setSkuCode(spu.getSpuCode() + "_SKU" + (skuCount + 1));
+        sku.setSpuId(spuId);
+        sku.setCreatedAt(LocalDateTime.now());
+        sku.setUpdatedAt(LocalDateTime.now());
+        if (sku.getStatus() == null) {
+            sku.setStatus(1);
+        }
+        if (sku.getStock() == null) {
+            sku.setStock(0);
+        }
+        if (sku.getLockedStock() == null) {
+            sku.setLockedStock(0);
+        }
+        if (sku.getSpecInfo() == null || sku.getSpecInfo().isEmpty()) {
+            sku.setSpecInfo("{}");
+        }
+        skuMapper.insert(sku);
+        return sku;
+    }
+
+    @Transactional
     public Sku update(Long spuId, Long skuId, Sku sku) {
         Sku oldSku = skuMapper.selectById(skuId);
         if (oldSku != null && sku.getSalePrice() != null) {

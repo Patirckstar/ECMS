@@ -27,6 +27,16 @@ public class SkuController {
         }
     }
 
+    @PostMapping
+    public ApiResult<Sku> create(@PathVariable Long spuId, @RequestBody Sku sku) {
+        try {
+            Sku created = skuService.create(spuId, sku);
+            return ApiResult.success(created);
+        } catch (Exception e) {
+            return ApiResult.error(500, e.getMessage());
+        }
+    }
+
     @PutMapping("/{skuId}")
     public ApiResult<Sku> update(@PathVariable Long spuId, @PathVariable Long skuId, @RequestBody Sku sku) {
         try {

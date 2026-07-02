@@ -125,6 +125,11 @@ async function loadStatusLogs() {
   }
 }
 
+function getSkuRowClass({ row }: { row: any }) {
+  if (row.status === 0) return 'disabled-row'
+  return ''
+}
+
 function goBack() {
   router.push('/product')
 }
@@ -188,7 +193,7 @@ function getStockStatus(sku: SkuItem) {
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <!-- Tab 1: 库存概况 -->
       <el-tab-pane label="库存概况" name="inventory">
-        <el-table :data="skuInventory" v-loading="loading" stripe border style="width: 100%">
+        <el-table :data="skuInventory" v-loading="loading" stripe border style="width: 100%" :row-class-name="getSkuRowClass">
           <el-table-column label="SKU规格" min-width="180">
             <template #default="{ row }">
               <span v-html="row.specName || row.specInfo"></span>
@@ -410,5 +415,14 @@ function getStockStatus(sku: SkuItem) {
 .timeline-content {
   display: flex;
   align-items: center;
+}
+
+:deep(.disabled-row) {
+  opacity: 0.5;
+  background-color: #fafafa;
+}
+
+:deep(.disabled-row:hover) {
+  cursor: not-allowed;
 }
 </style>

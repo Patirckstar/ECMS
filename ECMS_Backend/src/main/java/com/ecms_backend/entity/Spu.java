@@ -39,6 +39,9 @@ public class Spu {
     private BigDecimal salePrice;
     private BigDecimal memberPrice;
 
+    // 前台表单传入的标签ID列表（用于创建spu_tag关联，不在spu表中持久化）
+    private List<Long> tagIds;
+
     private List<SpuImage> images;
     private List<Tag> tags;
     private List<Sku> skus;
