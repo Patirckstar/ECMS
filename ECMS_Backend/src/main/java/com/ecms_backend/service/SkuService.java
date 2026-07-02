@@ -32,17 +32,20 @@ public class SkuService {
     @Transactional
     public Sku update(Long spuId, Long skuId, Sku sku) {
         Sku oldSku = skuMapper.selectById(skuId);
-        if (oldSku != null && oldSku.getSalePrice() != null
-                && sku.getSalePrice() != null
-                && oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
-            PriceLog priceLog = new PriceLog();
-            priceLog.setSkuId(skuId);
-            priceLog.setPriceType("sale_price");
-            priceLog.setBeforePrice(oldSku.getSalePrice());
-            priceLog.setAfterPrice(sku.getSalePrice());
-            priceLog.setOperatorId(null);
-            priceLog.setCreatedAt(LocalDateTime.now());
-            priceLogMapper.insert(priceLog);
+        if (oldSku != null && sku.getSalePrice() != null) {
+            if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
+                PriceLog priceLog = new PriceLog();
+                priceLog.setSkuId(skuId);
+                priceLog.setPriceType("sale_price");
+                priceLog.setBeforePrice(oldSku.getSalePrice());
+                priceLog.setAfterPrice(sku.getSalePrice());
+                priceLog.setOperatorId(null);
+                priceLog.setCreatedAt(LocalDateTime.now());
+                try {
+                    priceLogMapper.insert(priceLog);
+                } catch (Exception e) {
+                }
+            }
         }
 
         sku.setId(skuId);
@@ -55,24 +58,28 @@ public class SkuService {
     @Transactional
     public void batchUpdate(Long spuId, List<Sku> skus) {
         for (Sku sku : skus) {
-            sku.setSpuId(spuId);
             if (sku.getId() != null) {
                 Sku oldSku = skuMapper.selectById(sku.getId());
-                if (oldSku != null && oldSku.getSalePrice() != null
-                        && sku.getSalePrice() != null
-                        && oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
-                    PriceLog priceLog = new PriceLog();
-                    priceLog.setSkuId(sku.getId());
-                    priceLog.setPriceType("sale_price");
-                    priceLog.setBeforePrice(oldSku.getSalePrice());
-                    priceLog.setAfterPrice(sku.getSalePrice());
-                    priceLog.setOperatorId(null);
-                    priceLog.setCreatedAt(LocalDateTime.now());
-                    priceLogMapper.insert(priceLog);
+                if (oldSku != null && sku.getSalePrice() != null) {
+                    if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
+                        PriceLog priceLog = new PriceLog();
+                        priceLog.setSkuId(sku.getId());
+                        priceLog.setPriceType("sale_price");
+                        priceLog.setBeforePrice(oldSku.getSalePrice());
+                        priceLog.setAfterPrice(sku.getSalePrice());
+                        priceLog.setOperatorId(null);
+                        priceLog.setCreatedAt(LocalDateTime.now());
+                        try {
+                            priceLogMapper.insert(priceLog);
+                        } catch (Exception e) {
+                        }
+                    }
                 }
+                sku.setSpuId(spuId);
+                sku.setUpdatedAt(LocalDateTime.now());
+                skuMapper.update(sku);
             }
         }
-        skuMapper.batchUpdate(skus);
     }
 
     @Transactional

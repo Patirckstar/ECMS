@@ -15,11 +15,23 @@ public interface SkuMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Sku sku);
 
-    @Update("UPDATE sku SET sku_code = #{skuCode}, spu_id = #{spuId}, spec_info = #{specInfo}, " +
-            "market_price = #{marketPrice}, sale_price = #{salePrice}, member_price = #{memberPrice}, " +
-            "activity_price = #{activityPrice}, price_start_time = #{priceStartTime}, price_end_time = #{priceEndTime}, " +
-            "stock = #{stock}, locked_stock = #{lockedStock}, warn_threshold = #{warnThreshold}, " +
-            "status = #{status}, updated_at = NOW() WHERE id = #{id}")
+    @Update("<script>" +
+            "UPDATE sku SET updated_at = NOW()" +
+            "<if test='skuCode != null'>, sku_code = #{skuCode}</if>" +
+            "<if test='spuId != null'>, spu_id = #{spuId}</if>" +
+            "<if test='specInfo != null'>, spec_info = #{specInfo}</if>" +
+            "<if test='marketPrice != null'>, market_price = #{marketPrice}</if>" +
+            "<if test='salePrice != null'>, sale_price = #{salePrice}</if>" +
+            "<if test='memberPrice != null'>, member_price = #{memberPrice}</if>" +
+            "<if test='activityPrice != null'>, activity_price = #{activityPrice}</if>" +
+            "<if test='priceStartTime != null'>, price_start_time = #{priceStartTime}</if>" +
+            "<if test='priceEndTime != null'>, price_end_time = #{priceEndTime}</if>" +
+            "<if test='stock != null'>, stock = #{stock}</if>" +
+            "<if test='lockedStock != null'>, locked_stock = #{lockedStock}</if>" +
+            "<if test='warnThreshold != null'>, warn_threshold = #{warnThreshold}</if>" +
+            "<if test='status != null'>, status = #{status}</if>" +
+            " WHERE id = #{id}" +
+            "</script>")
     int update(Sku sku);
 
     @Select("SELECT * FROM sku WHERE id = #{id}")
@@ -31,21 +43,41 @@ public interface SkuMapper {
     @Update("<script>" +
             "UPDATE sku SET updated_at = NOW()" +
             "<if test='skus != null and skus.size() > 0'>" +
+            "<if test='skus[0].stock != null'>" +
             ", stock = CASE id " +
             "<foreach collection='skus' item='sku' separator=' '>" +
             "WHEN #{sku.id} THEN #{sku.stock} " +
             "</foreach>" +
             "END" +
+            "</if>" +
+            "<if test='skus[0].salePrice != null'>" +
             ", sale_price = CASE id " +
             "<foreach collection='skus' item='sku' separator=' '>" +
             "WHEN #{sku.id} THEN #{sku.salePrice} " +
             "</foreach>" +
             "END" +
+            "</if>" +
+            "<if test='skus[0].marketPrice != null'>" +
+            ", market_price = CASE id " +
+            "<foreach collection='skus' item='sku' separator=' '>" +
+            "WHEN #{sku.id} THEN #{sku.marketPrice} " +
+            "</foreach>" +
+            "END" +
+            "</if>" +
+            "<if test='skus[0].memberPrice != null'>" +
+            ", member_price = CASE id " +
+            "<foreach collection='skus' item='sku' separator=' '>" +
+            "WHEN #{sku.id} THEN #{sku.memberPrice} " +
+            "</foreach>" +
+            "END" +
+            "</if>" +
+            "<if test='skus[0].status != null'>" +
             ", status = CASE id " +
             "<foreach collection='skus' item='sku' separator=' '>" +
             "WHEN #{sku.id} THEN #{sku.status} " +
             "</foreach>" +
             "END" +
+            "</if>" +
             "</if>" +
             " WHERE id IN " +
             "<foreach collection='skus' item='sku' open='(' separator=',' close=')'>" +

@@ -63,14 +63,14 @@ export function offShelfProduct(id: number) {
  * 批量上架
  */
 export function batchOnShelf(ids: number[]) {
-  return request.post<ApiResult<null>>(`${BASE_URL}/batch-on-shelf`, { ids })
+  return request.post<ApiResult<string>>(`${BASE_URL}/batch-on-shelf`, { ids })
 }
 
 /**
  * 批量下架
  */
 export function batchOffShelf(ids: number[]) {
-  return request.post<ApiResult<null>>(`${BASE_URL}/batch-off-shelf`, { ids })
+  return request.post<ApiResult<string>>(`${BASE_URL}/batch-off-shelf`, { ids })
 }
 
 /**
@@ -127,6 +127,27 @@ export function getSkuInventory(spuId: number) {
  */
 export function adjustStock(spuId: number, skuId: number, qty: number, remark?: string) {
   return request.post<ApiResult<null>>(`${BASE_URL}/${spuId}/skus/${skuId}/adjust-stock`, { qty, remark })
+}
+
+/**
+ * 提交审核
+ */
+export function submitAuditProduct(id: number) {
+  return request.put<ApiResult<null>>(`${BASE_URL}/${id}/submit-audit`)
+}
+
+/**
+ * 审核通过
+ */
+export function auditApproveProduct(id: number) {
+  return request.put<ApiResult<null>>(`${BASE_URL}/${id}/audit/approve`)
+}
+
+/**
+ * 审核驳回
+ */
+export function auditRejectProduct(id: number, reason: string) {
+  return request.put<ApiResult<null>>(`${BASE_URL}/${id}/audit/reject`, { rejectReason: reason })
 }
 
 /**

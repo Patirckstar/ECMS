@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getProductList, deleteProduct, onShelfProduct, offShelfProduct, batchOnShelf, batchOffShelf, batchDeleteProducts, exportProducts } from '@/api/product'
+import { getProductList, deleteProduct, onShelfProduct, offShelfProduct, batchOnShelf, batchOffShelf, batchDeleteProducts, exportProducts, submitAuditProduct, auditApproveProduct, auditRejectProduct } from '@/api/product'
 import { getCategoryTree } from '@/api/category'
 import { getTagList } from '@/api/tag'
 import StatusTag from '@/components/product/StatusTag.vue'
@@ -138,28 +138,19 @@ function handleView(row: SpuItem) {
   router.push(`/product/edit/${row.id}`)
 }
 
-function handleSkuConfig(row: SpuItem) {
-  router.push(`/product/${row.id}/sku`)
-}
-
-function handleInventory(row: SpuItem) {
-  router.push(`/product/${row.id}/inventory`)
-}
-
 async function handleOnShelf(row: SpuItem) {
   try {
-    await ElMessageBox.confirm(`确定上架商品"${row.spuName}"？`, '上架确认', { type: 'info' })
     await onShelfProduct(row.id!)
     ElMessage.success('上架成功')
     await fetchData()
   } catch {
-    // 取消操作
+    ElMessage.error('上架失败')
   }
 }
 
 async function handleOffShelf(row: SpuItem) {
   try {
-    await ElMessageBox.confirm(`确定下架商品"${row.spuName}"？`, '下架确认', { type: 'warning' })
+    await ElMessageBox.confirm('确定要下架该商品？', '提示')
     await offShelfProduct(row.id!)
     ElMessage.success('下架成功')
     await fetchData()
@@ -170,11 +161,7 @@ async function handleOffShelf(row: SpuItem) {
 
 async function handleDelete(row: SpuItem) {
   try {
-    await ElMessageBox.confirm(
-      `确定要永久删除商品"${row.spuName}"吗？该操作不可恢复！`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '确认删除', confirmButtonClass: 'el-button--danger' },
-    )
+    await ElMessageBox.confirm('确定要删除该商品吗？', '提示', { type: 'warning' })
     await deleteProduct(row.id!)
     ElMessage.success('删除成功')
     await fetchData()
@@ -183,15 +170,73 @@ async function handleDelete(row: SpuItem) {
   }
 }
 
+async function handleSubmitAudit(row: SpuItem) {
+  try {
+    await submitAuditProduct(row.id!)
+    ElMessage.success('提交审核成功')
+    await fetchData()
+  } catch {
+    ElMessage.error('提交审核失败')
+  }
+}
+
+async function handleAuditApprove(row: SpuItem) {
+  try {
+    await ElMessageBox.confirm('确定审核通过该商品？上架后将可进行交易。', '审核通过确认')
+    await auditApproveProduct(row.id!)
+    ElMessage.success('审核通过，商品已上架')
+    await fetchData()
+  } catch {
+    // 取消操作
+  }
+}
+
+async function handleAuditReject(row: SpuItem) {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入驳回原因', '审核驳回', {
+      type: 'warning',
+      confirmButtonText: '确认驳回',
+    })
+    if (value) {
+      await auditRejectProduct(row.id!, value)
+      ElMessage.success('已驳回')
+      await fetchData()
+    }
+  } catch {
+    // 取消操作
+  }
+}
+
+function handleSkuConfig(row: SpuItem) {
+  router.push(`/product/${row.id}/sku`)
+}
+
+function handleInventory(row: SpuItem) {
+  router.push(`/product/${row.id}/inventory`)
+}
+
 async function handleBatchOnShelf() {
   if (!selectedIds.value.length) {
     ElMessage.warning('请选择要上架的商品')
     return
   }
+  const eligibleIds = selectedIds.value.filter(id => {
+    const item = tableData.value.find(row => row.id === id)
+    return item && (item.status === ProductStatus.OFF_SHELF || item.status === ProductStatus.PENDING)
+  })
+  if (!eligibleIds.length) {
+    ElMessage.warning('所选商品均不符合上架条件，只有待审核或已下架状态的商品才能上架')
+    return
+  }
+  const ineligibleCount = selectedIds.value.length - eligibleIds.length
+  let confirmMessage = `确定批量上架 ${eligibleIds.length} 件商品？`
+  if (ineligibleCount > 0) {
+    confirmMessage += `（${ineligibleCount} 件商品状态不符合上架条件，将被跳过）`
+  }
   try {
-    await ElMessageBox.confirm(`确定批量上架 ${selectedIds.value.length} 件商品？`, '批量上架确认')
-    await batchOnShelf(selectedIds.value)
-    ElMessage.success('批量上架成功')
+    await ElMessageBox.confirm(confirmMessage, '批量上架确认')
+    await batchOnShelf(eligibleIds)
+    ElMessage.success(`批量上架完成，共 ${eligibleIds.length} 件商品`)
     await fetchData()
   } catch {
     // 取消操作
@@ -203,10 +248,23 @@ async function handleBatchOffShelf() {
     ElMessage.warning('请选择要下架的商品')
     return
   }
+  const eligibleIds = selectedIds.value.filter(id => {
+    const item = tableData.value.find(row => row.id === id)
+    return item && item.status === ProductStatus.ON_SHELF
+  })
+  if (!eligibleIds.length) {
+    ElMessage.warning('所选商品均不符合下架条件，只有已上架状态的商品才能下架')
+    return
+  }
+  const ineligibleCount = selectedIds.value.length - eligibleIds.length
+  let confirmMessage = `确定批量下架 ${eligibleIds.length} 件商品？`
+  if (ineligibleCount > 0) {
+    confirmMessage += `（${ineligibleCount} 件商品状态不符合下架条件，将被跳过）`
+  }
   try {
-    await ElMessageBox.confirm(`确定批量下架 ${selectedIds.value.length} 件商品？`, '批量下架确认')
-    await batchOffShelf(selectedIds.value)
-    ElMessage.success('批量下架成功')
+    await ElMessageBox.confirm(confirmMessage, '批量下架确认')
+    await batchOffShelf(eligibleIds)
+    ElMessage.success(`批量下架完成，共 ${eligibleIds.length} 件商品`)
     await fetchData()
   } catch {
     // 取消操作
@@ -244,17 +302,21 @@ async function handleExport() {
 function canShowAction(row: SpuItem, action: string): boolean {
   switch (action) {
     case 'edit':
-      return row.status === ProductStatus.DRAFT || row.status === ProductStatus.OFF_SHELF
+      return row.status === ProductStatus.DRAFT || row.status === ProductStatus.OFF_SHELF || row.status === ProductStatus.REJECTED
     case 'view':
-      return row.status === ProductStatus.ON_SHELF || row.status === ProductStatus.PENDING || row.status === ProductStatus.REJECTED
+      return row.status === ProductStatus.ON_SHELF || row.status === ProductStatus.PENDING
     case 'on-shelf':
-      return row.status === ProductStatus.OFF_SHELF
+      return row.status === ProductStatus.OFF_SHELF || row.status === ProductStatus.PENDING
     case 'off-shelf':
       return row.status === ProductStatus.ON_SHELF
-    case 'audit':
-      return row.status === ProductStatus.PENDING || row.status === ProductStatus.REJECTED
+    case 'submit-audit':
+      return row.status === ProductStatus.DRAFT || row.status === ProductStatus.REJECTED
+    case 'audit-approve':
+      return row.status === ProductStatus.PENDING
+    case 'audit-reject':
+      return row.status === ProductStatus.PENDING
     case 'delete':
-      return row.status === ProductStatus.OFF_SHELF
+      return row.status === ProductStatus.OFF_SHELF || row.status === ProductStatus.DRAFT || row.status === ProductStatus.REJECTED
     default:
       return true
   }
@@ -379,10 +441,13 @@ function canShowAction(row: SpuItem, action: string): boolean {
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="160" sortable="custom" />
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="380" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canShowAction(row, 'edit')" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button v-if="canShowAction(row, 'view')" type="primary" link size="small" @click="handleView(row)">查看</el-button>
+          <el-button v-if="canShowAction(row, 'submit-audit')" type="info" link size="small" @click="handleSubmitAudit(row)">提交审核</el-button>
+          <el-button v-if="canShowAction(row, 'audit-approve')" type="success" link size="small" @click="handleAuditApprove(row)">审核通过</el-button>
+          <el-button v-if="canShowAction(row, 'audit-reject')" type="danger" link size="small" @click="handleAuditReject(row)">审核驳回</el-button>
           <el-button v-if="canShowAction(row, 'on-shelf')" type="success" link size="small" @click="handleOnShelf(row)">上架</el-button>
           <el-button v-if="canShowAction(row, 'off-shelf')" type="warning" link size="small" @click="handleOffShelf(row)">下架</el-button>
           <el-button type="primary" link size="small" @click="handleSkuConfig(row)">规格</el-button>
@@ -393,14 +458,13 @@ function canShowAction(row: SpuItem, action: string): boolean {
     </el-table>
 
     <!-- 分页 -->
-    <div class="pagination-wrapper">
+    <div class="pagination">
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.pageSize"
         :page-sizes="[10, 20, 50, 100]"
         :total="total"
         layout="total, sizes, prev, pager, next, jumper"
-        background
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
       />
@@ -409,7 +473,14 @@ function canShowAction(row: SpuItem, action: string): boolean {
 </template>
 
 <style scoped>
+.page-container {
+  padding: 16px;
+}
+
 .filter-bar {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
   margin-bottom: 16px;
 }
 
@@ -418,13 +489,15 @@ function canShowAction(row: SpuItem, action: string): boolean {
 }
 
 .action-bar {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
   margin-bottom: 16px;
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.pagination-wrapper {
+.pagination {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;

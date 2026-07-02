@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { createProduct, updateProduct, getProductDetail } from '@/api/product'
+import { createProduct, updateProduct, getProductDetail, getSkuList } from '@/api/product'
 import { getCategoryTree } from '@/api/category'
 import { getBrandList } from '@/api/brand'
 import { getTagList } from '@/api/tag'
@@ -14,7 +14,6 @@ const router = useRouter()
 const isEdit = computed(() => !!route.params.id)
 const productId = computed(() => Number(route.params.id))
 
-// ========== 表单数据 ==========
 const activeStep = ref(0)
 const formRef = ref()
 const loading = ref(false)
@@ -39,12 +38,29 @@ const formData = reactive({
   autoOffline: 0 as 0 | 1,
 })
 
-// 下拉数据
+const uploadImages = ref<{ name: string; url: string }[]>([])
+const uploadAction = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/upload/image`
+
+function handleUploadSuccess(response: any, file: any) {
+  uploadImages.value.push({
+    name: file.name,
+    url: response.data || response.url,
+  })
+}
+
+function handleRemoveImage(index: number) {
+  uploadImages.value.splice(index, 1)
+}
+
+function getImageUrl(url: string) {
+  if (url.startsWith('http')) return url
+  return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}${url}`
+}
+
 const categoryTree = ref<Category[]>([])
 const brandList = ref<Brand[]>([])
 const tagList = ref<Tag[]>([])
 
-// ========== 生命周期 ==========
 onMounted(async () => {
   try {
     const [catRes, brandRes, tagRes] = await Promise.all([
@@ -85,6 +101,14 @@ async function loadProductDetail() {
       returnPolicy: data.returnPolicy || '',
       autoOffline: data.autoOffline,
     })
+
+    const skuRes = await getSkuList(productId.value)
+    const skus = skuRes.data || []
+    if (skus.length > 0) {
+      formData.marketPrice = skus[0].marketPrice || 0
+      formData.salePrice = skus[0].salePrice || 0
+      formData.memberPrice = skus[0].memberPrice || 0
+    }
   } catch {
     ElMessage.error('加载商品信息失败')
   } finally {
@@ -92,13 +116,11 @@ async function loadProductDetail() {
   }
 }
 
-// ========== 表单校验 ==========
 const rules = {
   spuName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择商品分类', trigger: 'change' }],
 }
 
-// ========== 步骤 ==========
 const steps = ['基础信息', '素材信息', '价格物流', '售后配置']
 
 async function handleNext() {
@@ -128,6 +150,14 @@ async function handleSubmit() {
       ElMessage.success('保存成功')
     } else {
       const res = await createProduct({ ...formData } as any)
+      if (res.code !== 200) {
+        ElMessage.error(res.message || '创建失败')
+        return
+      }
+      if (!res.data || !res.data.id) {
+        ElMessage.error('创建失败：未返回商品ID')
+        return
+      }
       ElMessage.success('创建成功')
       router.push(`/product/edit/${res.data.id}`)
     }
@@ -138,7 +168,6 @@ async function handleSubmit() {
   }
 }
 
-// ========== 跳转SKU配置 ==========
 function goToSkuConfig() {
   if (productId.value) {
     router.push(`/product/${productId.value}/sku`)
@@ -148,13 +177,11 @@ function goToSkuConfig() {
 
 <template>
   <div class="page-container">
-    <!-- 步骤条 -->
     <el-steps :active="activeStep" align-center class="form-steps">
       <el-step v-for="(step, idx) in steps" :key="idx" :title="step" />
     </el-steps>
 
     <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" class="form-body">
-      <!-- Step 1: 基础信息 -->
       <div v-show="activeStep === 0" class="step-content">
         <el-form-item label="商品名称" prop="spuName">
           <el-input v-model="formData.spuName" placeholder="请输入商品名称（2-60字符）" maxlength="60" show-word-limit style="width: 500px" />
@@ -200,12 +227,21 @@ function goToSkuConfig() {
         </el-form-item>
       </div>
 
-      <!-- Step 2: 素材信息 -->
       <div v-show="activeStep === 1" class="step-content">
-        <el-empty description="素材上传功能请参考完整版实现（图片上传组件）" />
+        <h4 class="section-title">商品主图</h4>
+        <el-upload
+          :action="uploadAction"
+          list-type="picture-card"
+          :auto-upload="false"
+          :limit="5"
+          :on-success="handleUploadSuccess"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+        >
+          <el-icon><Plus /></el-icon>
+        </el-upload>
+        <p class="upload-tip">支持 PNG、JPG、GIF、WebP 格式，最多 5 张，建议尺寸 800×800</p>
       </div>
 
-      <!-- Step 3: 价格物流 -->
       <div v-show="activeStep === 2" class="step-content">
         <h4 class="section-title">价格信息</h4>
         <el-form-item label="市场价" prop="marketPrice">
@@ -234,7 +270,6 @@ function goToSkuConfig() {
         </template>
       </div>
 
-      <!-- Step 4: 售后配置 -->
       <div v-show="activeStep === 3" class="step-content">
         <el-form-item label="七天无理由" prop="sevenDayReturn">
           <el-switch v-model="formData.sevenDayReturn" :active-value="1" :inactive-value="0" />
@@ -251,7 +286,6 @@ function goToSkuConfig() {
       </div>
     </el-form>
 
-    <!-- 底部操作栏 -->
     <div class="form-footer">
       <el-button v-if="activeStep > 0" @click="handlePrev">上一步</el-button>
       <el-button v-if="activeStep < steps.length - 1" type="primary" @click="handleNext">下一步</el-button>
@@ -297,5 +331,11 @@ function goToSkuConfig() {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 8px;
 }
 </style>

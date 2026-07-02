@@ -1,6 +1,7 @@
 package com.ecms_backend.entity;
 
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,7 +34,18 @@ public class Spu {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // 前台表单传入的价格字段（仅用于创建默认SKU，不在spu表中持久化）
+    private BigDecimal marketPrice;
+    private BigDecimal salePrice;
+    private BigDecimal memberPrice;
+
     private List<SpuImage> images;
     private List<Tag> tags;
     private List<Sku> skus;
+
+    private String brandName;
+    private String categoryName;
+    private BigDecimal minPrice;
+    private Integer totalStock;
+    private Integer totalSales;
 }

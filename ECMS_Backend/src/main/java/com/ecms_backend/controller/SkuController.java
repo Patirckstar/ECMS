@@ -6,6 +6,7 @@ import com.ecms_backend.service.SkuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +41,33 @@ public class SkuController {
     public ApiResult<Void> batchUpdate(@PathVariable Long spuId, @RequestBody Map<String, Object> body) {
         try {
             @SuppressWarnings("unchecked")
-            List<Sku> skus = (List<Sku>) body.get("skus");
+            List<Map<String, Object>> rawSkus = (List<Map<String, Object>>) body.get("skus");
+            List<Sku> skus = new ArrayList<>();
+            for (Map<String, Object> raw : rawSkus) {
+                Sku sku = new Sku();
+                if (raw.containsKey("id")) {
+                    sku.setId(((Number) raw.get("id")).longValue());
+                }
+                if (raw.containsKey("salePrice")) {
+                    sku.setSalePrice(new java.math.BigDecimal(raw.get("salePrice").toString()));
+                }
+                if (raw.containsKey("marketPrice")) {
+                    sku.setMarketPrice(new java.math.BigDecimal(raw.get("marketPrice").toString()));
+                }
+                if (raw.containsKey("memberPrice")) {
+                    sku.setMemberPrice(new java.math.BigDecimal(raw.get("memberPrice").toString()));
+                }
+                if (raw.containsKey("stock")) {
+                    sku.setStock(((Number) raw.get("stock")).intValue());
+                }
+                if (raw.containsKey("warnThreshold")) {
+                    sku.setWarnThreshold(((Number) raw.get("warnThreshold")).intValue());
+                }
+                if (raw.containsKey("status")) {
+                    sku.setStatus(((Number) raw.get("status")).intValue());
+                }
+                skus.add(sku);
+            }
             skuService.batchUpdate(spuId, skus);
             return ApiResult.success(null);
         } catch (Exception e) {

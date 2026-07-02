@@ -1,71 +1,3 @@
-// ============================================================
-// 商品管理模块 - TypeScript 类型定义
-// ============================================================
-
-// 商品状态枚举
-export enum ProductStatus {
-    DRAFT = 0,       // 草稿
-    PENDING = 1,     // 待审核
-    ON_SHELF = 2,    // 已上架
-    OFF_SHELF = 3,   // 已下架
-    REJECTED = 4,    // 审核驳回
-}
-
-export const ProductStatusLabel: Record<number, string> = {
-    [ProductStatus.DRAFT]: '草稿',
-    [ProductStatus.PENDING]: '待审核',
-    [ProductStatus.ON_SHELF]: '已上架',
-    [ProductStatus.OFF_SHELF]: '已下架',
-    [ProductStatus.REJECTED]: '审核驳回',
-}
-
-export const ProductStatusColor: Record<number, string> = {
-    [ProductStatus.DRAFT]: '#909399',
-    [ProductStatus.PENDING]: '#E6A23C',
-    [ProductStatus.ON_SHELF]: '#67C23A',
-    [ProductStatus.OFF_SHELF]: '#C0C4CC',
-    [ProductStatus.REJECTED]: '#F56C6C',
-}
-
-// 商品类型
-export enum ProductType {
-    PHYSICAL = 1,  // 实物商品
-    VIRTUAL = 2,   // 虚拟商品
-}
-
-// 标签类型
-export interface Tag {
-    id: number
-    tagName: string
-    tagType: 1 | 2  // 1-系统固定, 2-自定义
-    tagColor: string
-    sortOrder: number
-    status: 0 | 1
-}
-
-// 品牌
-export interface Brand {
-    id: number
-    brandName: string
-    brandLogo?: string
-    brandDesc?: string
-    sortOrder: number
-    status: 0 | 1
-}
-
-// 分类
-export interface Category {
-    id: number
-    parentId: number
-    level: 1 | 2 | 3
-    catName: string
-    catIcon?: string
-    sortOrder: number
-    status: 0 | 1
-    children?: Category[]
-}
-
-// SPU 商品
 export interface SpuItem {
     id?: number
     spuCode?: string
@@ -95,7 +27,9 @@ export interface SpuItem {
     createdBy?: number
     createdAt?: string
     updatedAt?: string
-    // 扩展字段（表格展示用）
+    marketPrice?: number
+    salePrice?: number
+    memberPrice?: number
     images?: SpuImage[]
     tags?: Tag[]
     tagsIds?: number[]
@@ -104,25 +38,21 @@ export interface SpuItem {
     totalSales?: number
 }
 
-// SPU 图片
 export interface SpuImage {
     id?: number
     spuId?: number
-    imageType: 1 | 2 | 3  // 1-主图, 2-详情图, 3-视频封面
     imageUrl: string
-    videoUrl?: string
-    sortOrder: number
-    isCover: 0 | 1
+    sortOrder?: number
+    createdAt?: string
 }
 
-// SKU
 export interface SkuItem {
     id?: number
     skuCode?: string
     spuId?: number
-    specInfo: string  // JSON string: {"颜色":"红色","尺寸":"M"}
-    specInfoObj?: Record<string, string>  // 解析后的对象
-    specName?: string  // 拼接显示名
+    specInfo: string
+    specInfoObj?: Record<string, string>
+    specName?: string
     marketPrice: number
     salePrice: number
     memberPrice: number
@@ -137,76 +67,36 @@ export interface SkuItem {
     updatedAt?: string
 }
 
-// 库存日志
-export interface InventoryLog {
+export interface Category {
     id: number
-    skuId: number
-    skuCode?: string
-    specName?: string
-    spuId: number
-    changeType: 1 | 2 | 3 | 4 | 5 | 6
-    changeTypeLabel?: string
-    changeQty: number
-    beforeStock: number
-    afterStock: number
-    operatorId?: number
-    operatorName?: string
-    remark?: string
-    createdAt: string
+    catName: string
+    parentId: number
+    level: number
+    sortOrder: number
+    children?: Category[]
 }
 
-export const ChangeTypeLabel: Record<number, string> = {
-    1: '新增入库',
-    2: '手动调整',
-    3: '下单锁定',
-    4: '订单释放',
-    5: '订单扣减',
-    6: '批量调整',
-}
-
-// 状态流转记录
-export interface StatusLog {
+export interface Brand {
     id: number
-    spuId: number
-    fromStatus: number
-    toStatus: number
-    fromStatusLabel?: string
-    toStatusLabel?: string
-    operatorId: number
-    operatorName?: string
-    remark?: string
-    createdAt: string
+    brandName: string
+    brandLogo?: string
+    brandDesc?: string
+    status?: number
 }
 
-// 审核记录
-export interface AuditLog {
+export interface Tag {
     id: number
-    spuId: number
-    auditResult: 1 | 2
-    auditorId: number
-    auditorName?: string
-    rejectReason?: string
-    auditTime: string
+    tagName: string
+    tagColor?: string
+    sortOrder?: number
+    status?: number
 }
 
-// 分页结果
-export interface PageResult<T> {
-    records: T[]
-    total: number
+export interface ProductQueryParams {
     page: number
     pageSize: number
-}
-
-// 分页查询参数
-export interface PageParams {
-    page: number
-    pageSize: number
-}
-
-// 商品列表查询参数
-export interface ProductQueryParams extends PageParams {
     keyword?: string
-    status?: ProductStatus | ''
+    status?: number | string
     categoryId?: number
     tagId?: number
     priceMin?: number
@@ -216,12 +106,71 @@ export interface ProductQueryParams extends PageParams {
     createTimeStart?: string
     createTimeEnd?: string
     sortField?: string
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: string
 }
 
-// API 响应格式
-export interface ApiResult<T> {
-    code: number
-    message: string
-    data: T
+export enum ProductType {
+    PHYSICAL = 1,
+    VIRTUAL = 2,
+}
+
+export enum ProductStatus {
+    DRAFT = 0,
+    PENDING = 1,
+    ON_SHELF = 2,
+    OFF_SHELF = 3,
+    REJECTED = 4,
+}
+
+export const ProductStatusLabel: Record<number, string> = {
+    [ProductStatus.DRAFT]: '草稿',
+    [ProductStatus.PENDING]: '待审核',
+    [ProductStatus.ON_SHELF]: '已上架',
+    [ProductStatus.OFF_SHELF]: '已下架',
+    [ProductStatus.REJECTED]: '审核驳回',
+}
+
+export const ProductStatusColor: Record<number, string> = {
+    [ProductStatus.DRAFT]: '#909399',
+    [ProductStatus.PENDING]: '#E6A23C',
+    [ProductStatus.ON_SHELF]: '#67C23A',
+    [ProductStatus.OFF_SHELF]: '#C0C4CC',
+    [ProductStatus.REJECTED]: '#F56C6C',
+}
+
+export const ChangeTypeLabel: Record<number, string> = {
+    1: '入库',
+    2: '出库',
+}
+
+export interface InventoryLog {
+    id?: number
+    skuId?: number
+    spuId?: number
+    changeType?: number
+    changeQty?: number
+    beforeStock?: number
+    afterStock?: number
+    operatorId?: number
+    remark?: string
+    createdAt?: string
+}
+
+export interface StatusLog {
+    id?: number
+    spuId?: number
+    fromStatus?: number
+    toStatus?: number
+    operatorId?: number
+    remark?: string
+    createdAt?: string
+}
+
+export interface AuditLog {
+    id?: number
+    spuId?: number
+    auditResult?: number
+    auditorId?: number
+    rejectReason?: string
+    auditTime?: string
 }
