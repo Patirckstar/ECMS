@@ -59,18 +59,20 @@ public class SkuService {
     @Transactional
     public Sku update(Long spuId, Long skuId, Sku sku) {
         Sku oldSku = skuMapper.selectById(skuId);
-        if (oldSku != null && sku.getSalePrice() != null) {
-            if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
-                PriceLog priceLog = new PriceLog();
-                priceLog.setSkuId(skuId);
-                priceLog.setPriceType("sale_price");
-                priceLog.setBeforePrice(oldSku.getSalePrice());
-                priceLog.setAfterPrice(sku.getSalePrice());
-                priceLog.setOperatorId(null);
-                priceLog.setCreatedAt(LocalDateTime.now());
-                try {
-                    priceLogMapper.insert(priceLog);
-                } catch (Exception e) {
+        if (oldSku != null) {
+            if (sku.getMarketPrice() != null) {
+                if (oldSku.getMarketPrice() == null || oldSku.getMarketPrice().compareTo(sku.getMarketPrice()) != 0) {
+                    savePriceLog(skuId, "market_price", oldSku.getMarketPrice(), sku.getMarketPrice());
+                }
+            }
+            if (sku.getSalePrice() != null) {
+                if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
+                    savePriceLog(skuId, "sale_price", oldSku.getSalePrice(), sku.getSalePrice());
+                }
+            }
+            if (sku.getMemberPrice() != null) {
+                if (oldSku.getMemberPrice() == null || oldSku.getMemberPrice().compareTo(sku.getMemberPrice()) != 0) {
+                    savePriceLog(skuId, "member_price", oldSku.getMemberPrice(), sku.getMemberPrice());
                 }
             }
         }
@@ -82,23 +84,42 @@ public class SkuService {
         return sku;
     }
 
+    private void savePriceLog(Long skuId, String priceType, java.math.BigDecimal beforePrice,
+            java.math.BigDecimal afterPrice) {
+        PriceLog priceLog = new PriceLog();
+        priceLog.setSkuId(skuId);
+        priceLog.setPriceType(priceType);
+        priceLog.setBeforePrice(beforePrice);
+        priceLog.setAfterPrice(afterPrice);
+        priceLog.setOperatorId(null);
+        priceLog.setCreatedAt(LocalDateTime.now());
+        try {
+            priceLogMapper.insert(priceLog);
+        } catch (Exception e) {
+        }
+    }
+
     @Transactional
     public void batchUpdate(Long spuId, List<Sku> skus) {
         for (Sku sku : skus) {
             if (sku.getId() != null) {
                 Sku oldSku = skuMapper.selectById(sku.getId());
-                if (oldSku != null && sku.getSalePrice() != null) {
-                    if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
-                        PriceLog priceLog = new PriceLog();
-                        priceLog.setSkuId(sku.getId());
-                        priceLog.setPriceType("sale_price");
-                        priceLog.setBeforePrice(oldSku.getSalePrice());
-                        priceLog.setAfterPrice(sku.getSalePrice());
-                        priceLog.setOperatorId(null);
-                        priceLog.setCreatedAt(LocalDateTime.now());
-                        try {
-                            priceLogMapper.insert(priceLog);
-                        } catch (Exception e) {
+                if (oldSku != null) {
+                    if (sku.getMarketPrice() != null) {
+                        if (oldSku.getMarketPrice() == null
+                                || oldSku.getMarketPrice().compareTo(sku.getMarketPrice()) != 0) {
+                            savePriceLog(sku.getId(), "market_price", oldSku.getMarketPrice(), sku.getMarketPrice());
+                        }
+                    }
+                    if (sku.getSalePrice() != null) {
+                        if (oldSku.getSalePrice() == null || oldSku.getSalePrice().compareTo(sku.getSalePrice()) != 0) {
+                            savePriceLog(sku.getId(), "sale_price", oldSku.getSalePrice(), sku.getSalePrice());
+                        }
+                    }
+                    if (sku.getMemberPrice() != null) {
+                        if (oldSku.getMemberPrice() == null
+                                || oldSku.getMemberPrice().compareTo(sku.getMemberPrice()) != 0) {
+                            savePriceLog(sku.getId(), "member_price", oldSku.getMemberPrice(), sku.getMemberPrice());
                         }
                     }
                 }

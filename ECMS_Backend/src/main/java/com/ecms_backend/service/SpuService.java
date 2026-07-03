@@ -301,7 +301,16 @@ public class SpuService {
 	}
 
 	public void submitAudit(Long id) {
+		Spu spu = spuMapper.selectById(id);
+		if (spu == null) {
+			throw new RuntimeException("商品不存在");
+		}
+		int currentStatus = spu.getStatus();
+		if (currentStatus != STATUS_DRAFT && currentStatus != STATUS_REJECTED) {
+			throw new RuntimeException("只有草稿或审核驳回状态的商品才能提交审核");
+		}
 		spuMapper.updateStatus(id, STATUS_PENDING_AUDIT);
+		recordStatusLog(id, currentStatus, STATUS_PENDING_AUDIT, null);
 	}
 
 	public void approve(Long id, Long auditorId) {

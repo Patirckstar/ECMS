@@ -40,52 +40,6 @@ public interface SkuMapper {
     @Select("SELECT * FROM sku WHERE spu_id = #{spuId} ORDER BY id ASC")
     List<Sku> selectBySpuId(@Param("spuId") Long spuId);
 
-    @Update("<script>" +
-            "UPDATE sku SET updated_at = NOW()" +
-            "<if test='skus != null and skus.size() > 0'>" +
-            "<if test='skus[0].stock != null'>" +
-            ", stock = CASE id " +
-            "<foreach collection='skus' item='sku' separator=' '>" +
-            "WHEN #{sku.id} THEN #{sku.stock} " +
-            "</foreach>" +
-            "END" +
-            "</if>" +
-            "<if test='skus[0].salePrice != null'>" +
-            ", sale_price = CASE id " +
-            "<foreach collection='skus' item='sku' separator=' '>" +
-            "WHEN #{sku.id} THEN #{sku.salePrice} " +
-            "</foreach>" +
-            "END" +
-            "</if>" +
-            "<if test='skus[0].marketPrice != null'>" +
-            ", market_price = CASE id " +
-            "<foreach collection='skus' item='sku' separator=' '>" +
-            "WHEN #{sku.id} THEN #{sku.marketPrice} " +
-            "</foreach>" +
-            "END" +
-            "</if>" +
-            "<if test='skus[0].memberPrice != null'>" +
-            ", member_price = CASE id " +
-            "<foreach collection='skus' item='sku' separator=' '>" +
-            "WHEN #{sku.id} THEN #{sku.memberPrice} " +
-            "</foreach>" +
-            "END" +
-            "</if>" +
-            "<if test='skus[0].status != null'>" +
-            ", status = CASE id " +
-            "<foreach collection='skus' item='sku' separator=' '>" +
-            "WHEN #{sku.id} THEN #{sku.status} " +
-            "</foreach>" +
-            "END" +
-            "</if>" +
-            "</if>" +
-            " WHERE id IN " +
-            "<foreach collection='skus' item='sku' open='(' separator=',' close=')'>" +
-            "#{sku.id}" +
-            "</foreach>" +
-            "</script>")
-    int batchUpdate(@Param("skus") List<Sku> skus);
-
     @Delete("DELETE FROM sku WHERE spu_id = #{spuId}")
     int deleteBySpuId(@Param("spuId") Long spuId);
 }

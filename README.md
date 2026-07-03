@@ -1,6 +1,8 @@
 # ECMS 电商商品管理系统
 
 > **E-Commerce Product Management System** — 基于 Spring Boot 4 + Vue 3 + MySQL 9.5 的电商后台商品管理全栈项目。
+>
+> **🔥 云端部署状态**：后端已部署至阿里云服务器 `http://你的服务器IP:8080`，数据库与图片存储（OSS）均已上云，开箱即用。
 
 ---
 
@@ -21,7 +23,7 @@
 ## 项目简介
 
 ECMS 是一个电商后台的**商品管理模块**，覆盖商品从创建、编辑、审核、上下架、库存管理到删除的全生命周期管理。
-
+(虽然有用户管理模块，但是用户管理模块的功能与我们的项目需求相关性较小，因此未在项目中实现用户管理功能。)
 ### 核心功能
 
 | 功能模块 | 说明 |
@@ -108,22 +110,59 @@ ECMS/
 
 ## 快速开始
 
-### 前置条件
+### 使用方式
+
+ECMS 提供两种使用方式：
+
+| 方式 | 说明 | 适用场景 |
+|------|------|----------|
+| **☁️ 连接云端（推荐）** | 前端直连已部署的云服务器后端，无需启动本地后端 | 体验/演示 |
+| **💻 本地全栈开发** | 本地启动后端 + 前端，完整开发环境 | 二次开发/调试 |
+
+---
+
+### 方式一：☁️ 连接云端（开箱即用）
+
+后端、数据库、OSS 均已部署在阿里云，只需启动前端即可使用。
+
+```powershell
+cd ECMS_Front
+npm install
+npm run dev
+```
+
+前端启动后访问 [http://localhost:5173](http://localhost:5173)，自动连接云端后端 `http://你的服务器IP:8080`。
+
+---
+
+### 方式二：💻 本地全栈开发
+
+#### 前置条件
 
 - JDK 21+
 - Node.js 18+
 - MySQL 9.5（8.0+ 也可兼容）
 - Maven（项目内置 `mvnw.cmd`，无需手动安装）
 
-### 1. 配置与初始化数据库
+#### 1. 修改配置为本地环境
 
-**修改数据库连接配置**（打开 `ecms_backend/src/main/resources/application.properties`）：
+**数据库连接**（打开 `ecms_backend/src/main/resources/application.properties`）：
 
 ```properties
+# 将云服务器地址改为本地
 spring.datasource.url=jdbc:mysql://127.0.0.1:3306/ecms_product?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
 spring.datasource.username=root
 spring.datasource.password=你的密码
 ```
+
+**前端 API 地址**（打开 `ECMS_Front/src/utils/request.ts`）：
+
+```typescript
+// 将云服务器地址改为本地
+baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+```
+
+#### 2. 初始化数据库
 
 **创建数据库表**：
 
@@ -139,7 +178,7 @@ Get-Content "测试数据.sql" | mysql -u root -p ecms_product
 Get-Content "测试数据2.sql" | mysql -u root -p ecms_product
 ```
 
-### 2. 配置阿里云 OSS（可选）
+#### 3. 配置阿里云 OSS（可选）
 
 如需使用图片上传功能，需配置阿里云 OSS：
 
@@ -150,7 +189,7 @@ aliyun.oss.access-key-id=你的AccessKeyId
 aliyun.oss.access-key-secret=你的AccessKeySecret
 ```
 
-### 3. 启动后端
+#### 4. 启动后端
 
 ```powershell
 cd ecms_backend
@@ -161,7 +200,7 @@ cd ecms_backend
 
 > 首次启动会自动下载 Maven 依赖，耗时约 1-2 分钟。
 
-### 4. 启动前端
+#### 5. 启动前端
 
 ```powershell
 cd ECMS_Front
@@ -171,9 +210,83 @@ npm run dev
 
 前端启动在 → [http://localhost:5173](http://localhost:5173)
 
-### 5. 验证
+#### 6. 验证
 
 访问 [http://localhost:5173](http://localhost:5173)，应该能看到后台商品管理页面。
+
+---
+
+## 云服务器部署
+
+后端已成功部署至阿里云服务器（你的服务器IP），数据库和 OSS 均已上云。以下为部署步骤摘要。
+
+### 环境
+
+| 项目 | 配置 |
+|------|------|
+| **服务器** | 阿里云 ECS（CentOS 7），公网 IP: `你的服务器IP` |
+| **JDK** | `21.0.2`（宝塔面板安装，路径 `/www/server/java/jdk-21.0.2`） |
+| **MySQL** | 阿里云 RDS / 自建 MySQL（已配置远程访问） |
+| **对象存储** | 阿里云 OSS，Bucket: `你的Bucket名称`（广州，公共读） |
+
+### 部署步骤
+
+1. **打包后端**：
+   ```powershell
+   cd ecms_backend
+   .\mvnw.cmd clean package -DskipTests
+   ```
+   生成的 JAR 包位于 `target/ECMS_Backend-0.0.1-SNAPSHOT.jar`
+
+2. **上传至服务器**（使用宝塔面板或 scp）：
+   ```bash
+   # 本地执行（PowerShell）
+   scp ecms_backend/target/ECMS_Backend-0.0.1-SNAPSHOT.jar root@你的服务器IP:/opt/ecms/
+   ```
+
+3. **启动服务**：
+   ```bash
+   # 服务器上执行
+   mkdir -p /opt/ecms/logs
+   nohup java -jar /opt/ecms/ECMS_Backend-0.0.1-SNAPSHOT.jar > /opt/ecms/logs/app.log 2>&1 &
+   ```
+
+4. **配置安全组**（阿里云控制台 → 安全组 → 添加规则）：
+   - 协议: TCP
+   - 端口: 8080
+   - 授权对象: 0.0.0.0/0
+
+5. **验证**：
+   访问 [http://你的服务器IP:8080/api/products](http://你的服务器IP:8080/api/products) 查看商品列表数据。
+
+### 管理服务
+
+**使用 systemd 实现开机自启**（推荐）：
+
+```bash
+# 创建 systemd 服务
+cat > /etc/systemd/system/ecms.service << 'EOF'
+[Unit]
+Description=ECMS Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ecms
+ExecStart=/www/server/java/jdk-21.0.2/bin/java -jar /opt/ecms/ECMS_Backend-0.0.1-SNAPSHOT.jar
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启用并启动
+systemctl daemon-reload
+systemctl enable ecms
+systemctl start ecms
+```
 
 ---
 
@@ -306,6 +419,26 @@ sku ─────── inventory_log               │    spu_images
 2. RAM 子用户是否有 `AliyunOSSFullAccess` 权限
 3. AccessKeyId 和 AccessKeySecret 是否正确
 
+### Q: 访问云服务器 IP:8080 超时
+
+1. 检查阿里云安全组是否开放了 TCP:8080 端口
+2. 检查宝塔面板或服务器防火墙是否放行 8080 端口
+3. 确认后端服务是否正常运行：`ps -ef | grep ECMS_Backend`
+
+### Q: 云服务器重启后端需要重新启动
+
+推荐配置 systemd 开机自启（见上方「云服务器部署 → 管理服务」）。或用 `nohup` 启动后，即使关闭 SSH 终端服务也不会停止。
+
+### Q: 如何查看后端运行日志？
+
+```bash
+# 查看实时日志
+tail -f /opt/ecms/logs/app.log
+
+# 查看 systemd 日志
+journalctl -u ecms -f
+```
+
 ---
 
 ## 开发计划
@@ -321,19 +454,15 @@ sku ─────── inventory_log               │    spu_images
 ├── 图片/视频上传功能（对接阿里云 OSS 对象存储）
 ├── SKU 启用/禁用完整过滤逻辑
 ├── SKU 规格新增与编辑
-└── 商品列表缩略图展示
+├── 商品列表缩略图展示
+└── 云服务器部署（后端 + 数据库 + OSS 全量上云）
 
 第三阶段 ◻ 规划中
 ├── 用户登录与 JWT 权限控制
 ├── 商品数据统计报表（ECharts）
 ├── 富文本编辑器（退换货规则字段）
-└── 单元测试覆盖（后端 + 前端）
-
-第四阶段 ◻ 规划中
-├── 订单模块联动（下单锁库存 / 付款扣库存 / 取消释放）
-├── 营销活动模块对接
-├── 性能优化（Redis 缓存、SQL 索引优化）
-└── 部署文档 + CI/CD（Docker + GitHub Actions）
+├── 单元测试覆盖（后端 + 前端）
+└── CI/CD 自动化部署（Docker + GitHub Actions）
 ```
 
 ---

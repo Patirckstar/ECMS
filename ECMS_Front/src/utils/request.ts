@@ -2,7 +2,8 @@ import axios from 'axios'
 import router from '@/router'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  // !!! 可通过环境变量 VITE_API_BASE_URL 覆盖，或修改下方默认地址 !!!
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://你的服务器IP:8080',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
