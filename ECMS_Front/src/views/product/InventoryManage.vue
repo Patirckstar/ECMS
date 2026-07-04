@@ -289,9 +289,9 @@ function getStockStatus(sku: SkuItem) {
               placement="top"
             >
               <div class="timeline-content">
-                <StatusTag :status="log.fromStatus" />
+                <StatusTag :status="log.fromStatus ?? 0" />
                 <el-icon style="margin: 0 8px"><Right /></el-icon>
-                <StatusTag :status="log.toStatus" />
+                <StatusTag :status="log.toStatus ?? 0" />
                 <span style="margin-left: 12px; color: #909399; font-size: 13px">
                   操作人：{{ log.operatorName || '-' }}
                 </span>

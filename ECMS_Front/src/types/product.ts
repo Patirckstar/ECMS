@@ -138,6 +138,19 @@ export const ProductStatusColor: Record<number, string> = {
     [ProductStatus.REJECTED]: '#F56C6C',
 }
 
+export interface ApiResult<T> {
+    code: number
+    message: string
+    data: T
+}
+
+export interface PageResult<T> {
+    records: T[]
+    total: number
+    page?: number
+    pageSize?: number
+}
+
 export const ChangeTypeLabel: Record<number, string> = {
     1: '入库',
     2: '出库',
@@ -162,6 +175,7 @@ export interface StatusLog {
     fromStatus?: number
     toStatus?: number
     operatorId?: number
+    operatorName?: string
     remark?: string
     createdAt?: string
 }
@@ -171,6 +185,7 @@ export interface AuditLog {
     spuId?: number
     auditResult?: number
     auditorId?: number
+    auditorName?: string
     rejectReason?: string
     auditTime?: string
 }

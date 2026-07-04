@@ -41,7 +41,7 @@ const formData = reactive({
 })
 
 const uploadImages = ref<{ name: string; url: string }[]>([])
-const uploadAction = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/upload/image`
+const uploadAction = `${import.meta.env.VITE_API_BASE_URL || ''}/api/upload/image`
 
 async function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -49,12 +49,15 @@ async function handleFileChange(event: Event) {
 
   uploading.value = true
   try {
-    for (let i = 0; i < input.files.length; i++) {
-      const file = input.files[i]
+    const files = input.files
+    if (!files) return
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (!file) continue
       const formData = new FormData()
       formData.append('file', file)
 
-      const res = await axios.post(uploadAction, formData, {
+      const res: any = await axios.post(uploadAction, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
 
@@ -81,7 +84,7 @@ function handleRemoveImage(index: number) {
 
 function getImageUrl(url: string) {
   if (url.startsWith('http')) return url
-  return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}${url}`
+  return `${import.meta.env.VITE_API_BASE_URL || ''}${url}`
 }
 
 const categoryTree = ref<Category[]>([])

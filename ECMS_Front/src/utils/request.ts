@@ -2,8 +2,7 @@ import axios from 'axios'
 import router from '@/router'
 
 const request = axios.create({
-  // !!! 可通过环境变量 VITE_API_BASE_URL 覆盖，或修改下方默认地址 !!!
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://你的服务器IP:8080',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
